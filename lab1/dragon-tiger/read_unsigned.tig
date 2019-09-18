@@ -2,8 +2,26 @@ let
 	/* Read a positive integer from the standard input.
 	   Returns -1 on error */
 	function read_unsigned() : int =
-		var n : int := 0;
-		n + 1
+		let
+			var c : int := 0
+			var n : int := 0
+			var s : string := getchar()
+		in
+			while (s <> "\n") do (
+				c := ord(s);
+				if (c >= 48 & c <= 57) then (
+					n := n * 10 + c - 48;
+					s := getchar()
+				)
+				else (
+					c := 0;
+					break
+				)
+			);
+			if (c = 0) then
+				n := -1;
+			n
+		end
 	var a : int := read_unsigned()
 in
 	print_int(a*2);
