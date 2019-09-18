@@ -1,0 +1,11 @@
+let
+	/* Read a positive integer from the standard input.
+	   Returns -1 on error */
+	function read_unsigned() : int =
+		var n : int := 0;
+		n + 1
+	var a : int := read_unsigned()
+in
+	print_int(a*2);
+	print("\n")
+end
