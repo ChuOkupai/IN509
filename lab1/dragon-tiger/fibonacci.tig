@@ -1,7 +1,7 @@
 let
 	function fibonacci(n : int) : int =
 		if (n < 2) then
-			n
+			1
 		else
 			fibonacci(n - 1) + fibonacci(n - 2)
 in
