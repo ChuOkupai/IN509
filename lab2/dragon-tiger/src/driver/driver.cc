@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "../ast/ast_dumper.hh"
+#include "../ast/ast_evaluator.hh"
 #include "../parser/parser_driver.hh"
 #include "../utils/errors.hh"
 
@@ -12,6 +13,7 @@ int main(int argc, char **argv) {
   options.add_options()
   ("help,h", "describe arguments")
   ("dump-ast", "dump the parsed AST")
+  ("eval,e", "evaluate the AST")
   ("trace-parser", "enable parser traces")
   ("trace-lexer", "enable lexer traces")
   ("verbose,v", "be verbose")
@@ -42,11 +44,17 @@ int main(int argc, char **argv) {
   if (!parser_driver.parse(input_files[0])) {
     utils::error("parser failed");
   }
-
-  if (vm.count("dump-ast")) {
+  if (vm.count("dump-ast") && vm.count("eval")) {
+      utils::error("internal error: cannot use both dump-ast and eval at the same time");
+  }
+  if (vm.count("dump-ast")) { 
     ast::ASTDumper dumper(&std::cout, vm.count("verbose") > 0);
     parser_driver.result_ast->accept(dumper);
     dumper.nl();
+  }
+  if (vm.count("eval")) {
+    ast::ASTEvaluator evaluator;
+    std::cout << parser_driver.result_ast->accept(evaluator) << std::endl;
   }
   delete parser_driver.result_ast;
   return 0;

@@ -24,6 +24,7 @@ static std::string string_buffer;
 lineterminator  \r|\n|\r\n
 blank           [ \t\f]
 id              [a-zA-Z][_0-9a-zA-Z]*
+integer         (0|[1-9][0-9]*)
 
  /* Declare two start conditions (sub-automate states) to handle
     strings and comments */
@@ -72,6 +73,8 @@ id              [a-zA-Z][_0-9a-zA-Z]*
 
  /* Keywords */
 
+if       return yy::tiger_parser::make_IF(loc);
+then     return yy::tiger_parser::make_THEN(loc);
 else     return yy::tiger_parser::make_ELSE(loc);
 while    return yy::tiger_parser::make_WHILE(loc);
 for      return yy::tiger_parser::make_FOR(loc);
@@ -86,6 +89,15 @@ var      return yy::tiger_parser::make_VAR(loc);
 
  /* Identifiers */
 {id}       return yy::tiger_parser::make_ID(Symbol(yytext), loc);
+
+
+ /* Integers */
+{integer}  {
+	long n;
+	if ((n = strtol(yytext, NULL, 10)) > TIGER_INT_MAX)
+		utils::error(loc, "Overflow error");
+	return yy::tiger_parser::make_INT(n, loc);
+}
 
  /* Strings */
 \" {BEGIN(STRING); string_buffer.clear();}
