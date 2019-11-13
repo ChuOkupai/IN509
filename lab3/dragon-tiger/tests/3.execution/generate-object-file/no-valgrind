@@ -1,0 +1,14 @@
+No valgrind in this test because:
+
+% valgrind dtiger -o test.o input.tig
+
+==7913== Conditional jump or move depends on uninitialised value(s)
+==7913==    at 0x55A1BF3: ??? (in /usr/lib/x86_64-linux-gnu/libLLVM-7.so.1)
+==7913==    by 0x54FEDF8: llvm::MachineFunctionPass::runOnFunction(llvm::Function&) (in /usr/lib/x86_64-linux-gnu/libLLVM-7.so.1)
+==7913==    by 0x538F667: llvm::FPPassManager::runOnFunction(llvm::Function&) (in /usr/lib/x86_64-linux-gnu/libLLVM-7.so.1)
+==7913==    by 0x538F8C2: llvm::FPPassManager::runOnModule(llvm::Module&) (in /usr/lib/x86_64-linux-gnu/libLLVM-7.so.1)
+==7913==    by 0x538FC8A: llvm::legacy::PassManagerImpl::run(llvm::Module&) (in /usr/lib/x86_64-linux-gnu/libLLVM-7.so.1)
+==7913==    by 0x13914C: irgen::IRGenerator::write_object(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (irgen.cc:125)
+==7913==    by 0x117F97: main (driver.cc:89)
+
+To be investigated.
