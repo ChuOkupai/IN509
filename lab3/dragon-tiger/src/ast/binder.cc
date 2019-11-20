@@ -1,3 +1,4 @@
+#include <iostream>
 #include <sstream>
 
 #include "binder.hh"
@@ -119,49 +120,90 @@ FunDecl *Binder::analyze_program(Expr &root) {
 }
 
 void Binder::visit(IntegerLiteral &literal) {
+  std::cout << "IntegerLiteral" << std::endl;
 }
 
 void Binder::visit(StringLiteral &literal) {
+  std::cout << "StringLiteral" << std::endl;
 }
 
 void Binder::visit(BinaryOperator &op) {
+  std::cout << "BinaryOperator" << std::endl;
+  op.get_left().accept(*this);
+  op.get_right().accept(*this);
 }
 
 void Binder::visit(Sequence &seq) {
+  std::cout << "Sequence" << std::endl;
+  std::vector<Expr*> tati_danielle = seq.get_exprs();
+  for (Expr* e : tati_danielle)
+    e->accept(*this);
 }
 
 void Binder::visit(Let &let) {
+  std::cout << "Let: " << std::endl;
+  push_scope();
+  for (auto& decl: let.get_decls())
+    decl->accept(*this);
+  let.get_sequence().accept(*this);
+  pop_scope();
 }
 
 void Binder::visit(Identifier &id) {
+  std::cout << "Identifier: " << id.name.get() << std::endl;
+  id.set_decl(dynamic_cast<VarDecl*>(&find(id.loc, id.name)));
 }
 
 void Binder::visit(IfThenElse &ite) {
+  std::cout << "IfThenElse" << std::endl;
+  ite.get_condition().accept(*this);
+  ite.get_then_part().accept(*this);
+  ite.get_else_part().accept(*this);
 }
 
 void Binder::visit(VarDecl &decl) {
+  enter(decl);
+  std::cout << "VarDecl: " << decl.name.get() << std::endl;
+  decl.set_escapes();
+  decl.set_depth(decl.get_depth() - 1);
+  decl.get_expr().value().accept(*this);
 }
 
 void Binder::visit(FunDecl &decl) {
+  std::cout << "FunDecl: " << decl.name.get() << std::endl;
   set_parent_and_external_name(decl);
+  enter(decl);
   functions.push_back(&decl);
-  /* ... put your code here ... */
+  push_scope();
+  for (VarDecl *v : decl.get_params())
+  {
+    v->set_escapes();
+    enter(*v);
+  }
+  decl.get_expr()->accept(*this);
+  pop_scope();
   functions.pop_back();
 }
 
 void Binder::visit(FunCall &call) {
+  std::cout << "FunCall" << std::endl;
+  call.set_decl(dynamic_cast<FunDecl*>(&find(call.loc, call.func_name)));
 }
 
 void Binder::visit(WhileLoop &loop) {
+  std::cout << "WhileLoop" << std::endl;
 }
 
 void Binder::visit(ForLoop &loop) {
+  std::cout << "ForLoop" << std::endl;
 }
 
 void Binder::visit(Break &b) {
+  std::cout << "Break" << std::endl;
 }
 
 void Binder::visit(Assign &assign) {
+  std::cout << "Assign" << std::endl;
 }
 
 } // namespace binder

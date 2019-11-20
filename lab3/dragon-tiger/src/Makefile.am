@@ -1,2 +1,1 @@
-SUBDIRS=ast utils driver
-EXTRA_DIST=parser
+SUBDIRS=parser ast utils driver
