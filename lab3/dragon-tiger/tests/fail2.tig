@@ -1,0 +1,6 @@
+let
+	var a := 0
+	function plusn(a : int) : int = a + 1
+in
+	a
+end

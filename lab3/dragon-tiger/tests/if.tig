@@ -1,0 +1,5 @@
+let
+	var a := 0
+in
+	if a > 0 then b + 1 else 0
+end

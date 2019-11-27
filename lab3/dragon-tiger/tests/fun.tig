@@ -1,0 +1,7 @@
+let
+	var a := 0
+	function f(b: int): int =
+		if (a) then b else a
+in
+	f(1) + a
+end

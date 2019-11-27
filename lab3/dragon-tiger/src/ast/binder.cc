@@ -8,6 +8,8 @@
 using utils::error;
 using utils::non_fatal_error;
 
+#define DEBUG 0
+
 namespace ast {
 namespace binder {
 
@@ -120,90 +122,162 @@ FunDecl *Binder::analyze_program(Expr &root) {
 }
 
 void Binder::visit(IntegerLiteral &literal) {
-  std::cout << "IntegerLiteral" << std::endl;
+  #if DEBUG
+    std::cout << "IntegerLiteral" << std::endl;
+  #endif
 }
 
 void Binder::visit(StringLiteral &literal) {
-  std::cout << "StringLiteral" << std::endl;
+  #if DEBUG
+    std::cout << "StringLiteral" << std::endl;
+  #endif
 }
 
 void Binder::visit(BinaryOperator &op) {
-  std::cout << "BinaryOperator" << std::endl;
+  #if DEBUG
+    std::cout << "BinaryOperator" << std::endl;
+  #endif
   op.get_left().accept(*this);
   op.get_right().accept(*this);
 }
 
 void Binder::visit(Sequence &seq) {
-  std::cout << "Sequence" << std::endl;
-  std::vector<Expr*> tati_danielle = seq.get_exprs();
-  for (Expr* e : tati_danielle)
+  #if DEBUG
+    std::cout << "Sequence" << std::endl;
+  #endif
+  for (Expr* e : seq.get_exprs())
     e->accept(*this);
 }
 
 void Binder::visit(Let &let) {
-  std::cout << "Let: " << std::endl;
+  std::vector<FunDecl *> queue;
+  FunDecl *f;
+
+  #if DEBUG
+    std::cout << "Let: " << std::endl;
+  #endif
   push_scope();
-  for (auto& decl: let.get_decls())
-    decl->accept(*this);
+  for (auto& i: let.get_decls())
+    if ((f = dynamic_cast<FunDecl*>(i)))
+    {
+      enter(*f);
+      queue.push_back(f);
+    }
+    else
+    {
+      for (auto j = queue.cbegin(); j != queue.cend(); j++)
+        (*j)->accept(*this);
+      queue.clear();
+      i->accept(*this);
+    }
+  for (auto i = queue.cbegin(); i != queue.cend(); i++)
+    (*i)->accept(*this);
+  queue.clear();
   let.get_sequence().accept(*this);
   pop_scope();
 }
 
 void Binder::visit(Identifier &id) {
-  std::cout << "Identifier: " << id.name.get() << std::endl;
-  id.set_decl(dynamic_cast<VarDecl*>(&find(id.loc, id.name)));
+  VarDecl *v;
+
+  #if DEBUG
+    std::cout << "Identifier: " << id.name.get() << std::endl;
+  #endif
+  if ((v = dynamic_cast<VarDecl*>(&find(id.loc, id.name))))
+  {
+    id.set_decl(v);
+    id.set_depth(functions.back()->get_depth());
+    if (v->get_depth() < id.get_depth())
+      v->set_escapes();
+  }
 }
 
 void Binder::visit(IfThenElse &ite) {
-  std::cout << "IfThenElse" << std::endl;
+  #if DEBUG
+    std::cout << "IfThenElse" << std::endl;
+  #endif
   ite.get_condition().accept(*this);
   ite.get_then_part().accept(*this);
   ite.get_else_part().accept(*this);
 }
 
 void Binder::visit(VarDecl &decl) {
+  #if DEBUG
+    std::cout << "VarDecl: " << decl.name.get() << std::endl;
+  #endif
+  if (decl.get_expr())
+    decl.get_expr()->accept(*this);
   enter(decl);
-  std::cout << "VarDecl: " << decl.name.get() << std::endl;
-  decl.set_escapes();
-  decl.set_depth(decl.get_depth() - 1);
-  decl.get_expr().value().accept(*this);
+  decl.set_depth(functions.back()->get_depth());
 }
 
 void Binder::visit(FunDecl &decl) {
-  std::cout << "FunDecl: " << decl.name.get() << std::endl;
+  #if DEBUG
+    std::cout << "FunDecl: " << decl.name.get() << std::endl;
+  #endif
   set_parent_and_external_name(decl);
-  enter(decl);
+  decl.set_depth(functions.empty() ? 0 : functions.back()->get_depth() + 1);
   functions.push_back(&decl);
   push_scope();
-  for (VarDecl *v : decl.get_params())
-  {
-    v->set_escapes();
-    enter(*v);
-  }
+  for (auto i = decl.get_params().cbegin(); i != decl.get_params().cend(); i++)
+    (*i)->accept(*this);
   decl.get_expr()->accept(*this);
   pop_scope();
   functions.pop_back();
 }
 
 void Binder::visit(FunCall &call) {
-  std::cout << "FunCall" << std::endl;
-  call.set_decl(dynamic_cast<FunDecl*>(&find(call.loc, call.func_name)));
+  FunDecl& f = dynamic_cast<FunDecl&>(find(call.loc, call.func_name));
+
+  #if DEBUG
+    std::cout << "FunCall" << std::endl;
+  #endif
+  call.set_decl(&f);
+  call.set_depth(functions.back()->get_depth());
+  for (auto i = call.get_args().cbegin(); i != call.get_args().cend(); i++)
+    (*i)->accept(*this);
 }
 
 void Binder::visit(WhileLoop &loop) {
-  std::cout << "WhileLoop" << std::endl;
+  #if DEBUG
+    std::cout << "WhileLoop" << std::endl;
+  #endif
+  loop.get_condition().accept(*this);
+  loops.push_back(&loop);
+  loop.get_body().accept(*this);
+  loops.pop_back();
 }
 
 void Binder::visit(ForLoop &loop) {
-  std::cout << "ForLoop" << std::endl;
+  #if DEBUG
+    std::cout << "ForLoop" << std::endl;
+  #endif
+  push_scope();
+  loop.get_variable().accept(*this);
+  loop.get_high().accept(*this);
+  loops.push_back(&loop);
+  loop.get_body().accept(*this);
+  pop_scope();
+  loops.pop_back();
 }
 
 void Binder::visit(Break &b) {
-  std::cout << "Break" << std::endl;
+  #if DEBUG
+    std::cout << "Break" << std::endl;
+  #endif
+  if (loops.empty() || !loops.back())
+    error(b.loc, "illegal break");
+  b.set_loop(loops.back());
 }
 
 void Binder::visit(Assign &assign) {
-  std::cout << "Assign" << std::endl;
+  #if DEBUG
+    std::cout << "Assign" << std::endl;
+  #endif
+  assign.get_rhs().accept(*this);
+  assign.get_lhs().accept(*this);
+  if (assign.get_lhs().get_decl()->read_only)
+    error(assign.loc, "assign error");
 }
 
 } // namespace binder

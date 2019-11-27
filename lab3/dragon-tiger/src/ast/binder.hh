@@ -14,6 +14,7 @@ typedef std::unordered_map<Symbol, Decl *> scope_t;
 class Binder : public ASTVisitor {
   std::vector<scope_t> scopes;
   std::vector<FunDecl *> functions;
+  std::vector<Loop *> loops;
   std::unordered_set<Symbol> external_names;
   void push_scope();
   void pop_scope();
