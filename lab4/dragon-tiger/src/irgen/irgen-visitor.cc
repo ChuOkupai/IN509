@@ -4,16 +4,6 @@
 
 #include "llvm/Support/raw_ostream.h"
 
-namespace {
-
-// This function can be removed once the lab has been fully implemented.
-[[noreturn]] void UNIMPLEMENTED() {
-  std::cerr << "Error: unimplemented feature\n";
-  exit(1);
-}
-
-} // namespace
-
 namespace irgen {
 
 llvm::Value *IRGenerator::visit(const IntegerLiteral &literal) {
@@ -25,7 +15,7 @@ llvm::Value *IRGenerator::visit(const StringLiteral &literal) {
 }
 
 llvm::Value *IRGenerator::visit(const Break &b) {
-  UNIMPLEMENTED();
+  return Builder.CreateBr(loop_exit_bbs[&b.get_loop().get()]);
 }
 
 llvm::Value *IRGenerator::visit(const BinaryOperator &op) {
@@ -167,7 +157,26 @@ llvm::Value *IRGenerator::visit(const FunCall &call) {
 }
 
 llvm::Value *IRGenerator::visit(const WhileLoop &loop) {
-  UNIMPLEMENTED();
+  llvm::BasicBlock *const test_block =
+      llvm::BasicBlock::Create(Context, "loop_test", current_function);
+  llvm::BasicBlock *const body_block =
+      llvm::BasicBlock::Create(Context, "loop_body", current_function);
+  llvm::BasicBlock *const end_block =
+      llvm::BasicBlock::Create(Context, "loop_end", current_function);
+  loop_exit_bbs[&loop] = end_block;
+
+  Builder.CreateBr(test_block);
+
+  Builder.SetInsertPoint(test_block);
+  Builder.CreateCondBr(Builder.CreateIsNotNull(loop.get_condition().accept(*this)),
+                       body_block, end_block);
+
+  Builder.SetInsertPoint(body_block);
+  loop.get_body().accept(*this);
+  Builder.CreateBr(test_block);
+
+  Builder.SetInsertPoint(end_block);
+  return nullptr;
 }
 
 llvm::Value *IRGenerator::visit(const ForLoop &loop) {
@@ -179,6 +188,8 @@ llvm::Value *IRGenerator::visit(const ForLoop &loop) {
       llvm::BasicBlock::Create(Context, "loop_end", current_function);
   llvm::Value *const index = loop.get_variable().accept(*this);
   llvm::Value *const high = loop.get_high().accept(*this);
+  loop_exit_bbs[&loop] = end_block;
+
   Builder.CreateBr(test_block);
 
   Builder.SetInsertPoint(test_block);
