@@ -82,15 +82,37 @@ llvm::Value *IRGenerator::visit(const Let &let) {
 }
 
 llvm::Value *IRGenerator::visit(const Identifier &id) {
-  UNIMPLEMENTED();
+  return (Builder.CreateLoad(address_of(id), &id.name));
 }
 
 llvm::Value *IRGenerator::visit(const IfThenElse &ite) {
-  UNIMPLEMENTED();
+  llvm::Value *const result = alloca_in_entry(llvm_type(ite.get_type()), "if_result");
+  llvm::BasicBlock *const then_block = llvm::BasicBlock::Create(Context, "if_then", current_function);
+  llvm::BasicBlock *const else_block = llvm::BasicBlock::Create(Context, "if_else", current_function);
+  llvm::BasicBlock *const end_block = llvm::BasicBlock::Create(Context, "if_end", current_function);
+
+  Builder.CreateCondBr(Builder.CreateIsNotNull(ite.get_condition().accept(*this)), then_block, else_block);
+
+  Builder.SetInsertPoint(then_block);
+  ite.get_then_part().accept(*this);
+  Builder.CreateStore(ite.get_then_part().accept(*this), result);
+  Builder.CreateBr(end_block);
+
+  Builder.SetInsertPoint(else_block);
+  ite.get_else_part().accept(*this);
+  if (ite.get_else_part().get_type() != t_void)
+    Builder.CreateStore(ite.get_else_part().accept(*this), result);
+  Builder.CreateBr(end_block);
+
+  Builder.SetInsertPoint(end_block);
+  return (ite.get_type() != t_void ? Builder.CreateLoad(result) : result);
 }
 
 llvm::Value *IRGenerator::visit(const VarDecl &decl) {
-  UNIMPLEMENTED();
+  allocations[&decl] = alloca_in_entry(llvm_type(decl.get_type()), decl.name);
+  if (auto expr = decl.get_expr())
+    Builder.CreateStore(expr->accept(*this), allocations[&decl]);
+  return (allocations[&decl]);
 }
 
 llvm::Value *IRGenerator::visit(const FunDecl &decl) {
@@ -172,7 +194,7 @@ llvm::Value *IRGenerator::visit(const ForLoop &loop) {
 }
 
 llvm::Value *IRGenerator::visit(const Assign &assign) {
-  UNIMPLEMENTED();
+  return Builder.CreateStore(assign.get_rhs().accept(*this), address_of(assign.get_lhs()));
 }
 
 } // namespace irgen
